@@ -1,5 +1,5 @@
 {
-  "name": "create-ts-starter",
+  "name": "typescript-graphql-server",
   "version": "0.0.5",
   "description": "Production ready starter for typescript node project",
   "repository": {
@@ -80,9 +80,11 @@
     "@apollo/federation": "^0.21.0",
     "apollo-server-express": "^2.19.2",
     "class-validator": "^0.13.1",
+    "cors": "^2.8.5",
     "express": "^4.17.1",
     "fast-node-logger": "^1.4.10",
     "graphql": "^15.4.0",
+    "helmet": "^4.4.1",
     "reflect-metadata": "^0.1.13",
     "type-graphql": "^1.1.1"
   }

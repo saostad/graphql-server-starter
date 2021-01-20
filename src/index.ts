@@ -3,9 +3,11 @@ import dotenv from "dotenv";
 import path from "path";
 dotenv.config();
 import { createLogger, writeLog } from "fast-node-logger";
+import cors, { CorsOptions } from "cors";
+import helmet from "helmet";
 import type { NodeMode } from "./typings/node/mode";
 import express from "express";
-import { ApolloServer, gql } from "apollo-server-express";
+import { ApolloServer } from "apollo-server-express";
 import expressPinoLogger from "express-pino-logger";
 import { schemaGenerator } from "./graphql/schema-generator";
 
@@ -27,25 +29,42 @@ export async function main() {
   });
   writeLog(`script started in ${nodeMode} mode!`, { stdout: true });
 
-  /** put your code below here */
+  const app = express();
 
-  // // Construct a schema, using GraphQL schema language
-  // const typeDefs = gql`
-  //   type Query {
-  //     hello: String
-  //   }
-  // `;
+  /**@step helmet for http security headers */
+  const helmetOptions: Parameters<typeof helmet>[0] = {
+    contentSecurityPolicy: nodeMode === "development" ? false : undefined,
+  };
+  app.use(helmet(helmetOptions));
 
-  // // Provide resolver functions for your schema fields
-  // const resolvers = {
-  //   Query: {
-  //     hello: (_: any, {}: any, ctx: any) => {
-  //       console.log(`File: index.ts,`, `Line: 41 => `, ctx);
+  /**@step cors config*/
+  /**cors white list */
+  const corsWhitelist = [
+    /** Client URL on Production */ "https://DOMAIN.kajimausa.com",
+  ];
 
-  //       return "Hello world!";
-  //     },
-  //   },
-  // };
+  if (nodeMode === "development") {
+    corsWhitelist.push(
+      `http://localhost:3000` /** Client URL on development */,
+      `http://localhost:${serverPort}` /** Playground */,
+    );
+  }
+  const corsOptions: CorsOptions = {
+    origin: function (origin, callback) {
+      if (origin === undefined) {
+        callback(null, true);
+      } else if (origin && corsWhitelist.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        writeLog(`Not allowed by CORS for ${origin}`);
+        callback(new Error(`Not allowed by CORS for ${origin}`), false);
+      }
+    },
+    methods: "POST",
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  };
+  app.use(cors(corsOptions));
 
   const schema = await schemaGenerator({
     federated: false,
@@ -58,8 +77,6 @@ export async function main() {
     logger,
     context: { a: "a" },
   });
-
-  const app = express();
 
   app.use(expressPinoLogger({ logger }));
 
