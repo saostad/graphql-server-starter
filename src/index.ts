@@ -39,9 +39,7 @@ export async function main() {
 
   /**@step cors config*/
   /**cors white list */
-  const corsWhitelist = [
-    /** Client URL on Production */ "https://DOMAIN.kajimausa.com",
-  ];
+  const corsWhitelist = [/** Client URL on Production */ "https://DOMAIN.com"];
 
   if (nodeMode === "development") {
     corsWhitelist.push(
@@ -71,8 +69,6 @@ export async function main() {
   });
 
   const server = new ApolloServer({
-    // typeDefs,
-    // resolvers,
     schema,
     logger,
     context: { a: "a" },
