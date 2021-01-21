@@ -1,14 +1,13 @@
 {
   "name": "typescript-graphql-server",
   "version": "0.0.5",
-  "description": "Production ready starter for typescript node project",
+  "description": "Production ready starter for typescript node graphql server project",
   "repository": {
     "type": "git",
-    "url": "https://github.com/saostad/node-typescript-starter.git"
+    "url": "https://github.com/saostad/graphql-server-starter.git"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "bin": "bin/setup",
   "scripts": {
     "format": "prettier --check \"src/**/*.ts\" --write",
     "lint": "eslint --ext \".ts,.js\" src --quiet",
