@@ -27,7 +27,7 @@ const serverPort = parseInt(process.env.PORT || "4001");
 
 const gqlUrlPath = "/graphql";
 
-export async function main() {
+async function main() {
   /** ready to use instance of logger */
   const logger = await createLogger({
     level: nodeMode === "development" ? "trace" : "warn",
@@ -73,6 +73,7 @@ export async function main() {
   };
   app.use(cors(corsOptions));
 
+  /**@step authentication setup to check the azure AD token */
   const azureAdTokenOptions: IBearerStrategyOptionWithRequest = {
     identityMetadata: process.env.IDENTITY_METADATA ?? "",
     clientID: process.env.CLIENT_ID ?? "",
@@ -107,10 +108,12 @@ export async function main() {
     passport.authenticate("oauth-bearer", { session: false }),
   );
 
+  /**@step generate graphql schema */
   const schema = await schemaGenerator({
     federated: false,
   });
 
+  /**@step graphql server setup */
   const server = new ApolloServer({
     schema,
     logger,
@@ -121,6 +124,7 @@ export async function main() {
 
   server.applyMiddleware({ app });
 
+  /**@step run the server */
   app.listen({ port: serverPort }, () =>
     writeLog(
       `Server ready at http://localhost:${serverPort}${server.graphqlPath}`,
