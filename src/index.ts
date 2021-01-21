@@ -9,6 +9,11 @@ import type { NodeMode } from "./typings/node/mode";
 import express from "express";
 import { ApolloServer } from "apollo-server-express";
 import expressPinoLogger from "express-pino-logger";
+import {
+  BearerStrategy,
+  IBearerStrategyOptionWithRequest,
+} from "passport-azure-ad";
+import passport from "passport";
 import { schemaGenerator } from "./graphql/schema-generator";
 
 /** server mode base on process.env.NODE_ENV */
@@ -20,6 +25,8 @@ if (process.env.NODE_ENV) {
 
 const serverPort = parseInt(process.env.PORT || "4001");
 
+const gqlUrlPath = "/graphql";
+
 export async function main() {
   /** ready to use instance of logger */
   const logger = await createLogger({
@@ -30,6 +37,8 @@ export async function main() {
   writeLog(`script started in ${nodeMode} mode!`, { stdout: true });
 
   const app = express();
+
+  app.use(expressPinoLogger({ logger }));
 
   /**@step helmet for http security headers */
   const helmetOptions: Parameters<typeof helmet>[0] = {
@@ -64,6 +73,40 @@ export async function main() {
   };
   app.use(cors(corsOptions));
 
+  const azureAdTokenOptions: IBearerStrategyOptionWithRequest = {
+    identityMetadata: process.env.IDENTITY_METADATA ?? "",
+    clientID: process.env.CLIENT_ID ?? "",
+    validateIssuer: true,
+    issuer: process.env.ISSUER,
+    passReqToCallback: true,
+    isB2C: false,
+    allowMultiAudiencesInToken: false,
+    audience: process.env.CLIENT_ID ?? "",
+    loggingLevel: `warn`,
+    loggingNoPII: false,
+    clockSkew: 300,
+  };
+  const bearerStrategy = new BearerStrategy(
+    azureAdTokenOptions,
+    function (req, token, done) {
+      writeLog("verifying the user...");
+      writeLog(`${JSON.stringify(token)} was the token retrieved`, {
+        level: "debug",
+        stdout: true,
+      });
+
+      // @ts-expect-error
+      return done(null, token.preferred_username, token);
+    },
+  );
+  passport.use(bearerStrategy);
+  app.use(passport.initialize());
+
+  app.post(
+    gqlUrlPath,
+    passport.authenticate("oauth-bearer", { session: false }),
+  );
+
   const schema = await schemaGenerator({
     federated: false,
   });
@@ -71,10 +114,10 @@ export async function main() {
   const server = new ApolloServer({
     schema,
     logger,
-    context: { a: "a" },
+    context: ({ req }) => {
+      return { user: req.user };
+    },
   });
-
-  app.use(expressPinoLogger({ logger }));
 
   server.applyMiddleware({ app });
 

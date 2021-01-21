@@ -1,6 +1,9 @@
 declare namespace NodeJS {
   export interface ProcessEnv {
     NODE_ENV?: "development" | "production";
-    MY_SECRET?: string;
+    IDENTITY_METADATA?: string;
+    CLIENT_ID?: string;
+    ISSUER?: string;
+    AUDIENCE?: string;
   }
 }
